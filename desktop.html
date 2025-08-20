@@ -286,6 +286,10 @@
             <img src="https://placehold.co/40x40/555/ffffff?text=T" class="desktop-icon-img" alt="Terminal">
             <span class="desktop-icon-label">Terminal</span>
         </div>
+        <div class="desktop-icon" data-window-id="wifi-app">
+            <img src="https://placehold.co/40x40/0088cc/ffffff?text=W" class="desktop-icon-img" alt="Wi-Fi">
+            <span class="desktop-icon-label">Wi-Fi</span>
+        </div>
     </div>
 
     <div class="taskbar" style="display: none;">
@@ -309,6 +313,7 @@
         <button class="bg-gray-200 hover:bg-gray-300 rounded px-3 py-1 text-left text-sm" data-window-id="window5">Calculator</button>
         <button class="bg-gray-200 hover:bg-gray-300 rounded px-3 py-1 text-left text-sm" data-window-id="window6">Game</button>
         <button class="bg-gray-200 hover:bg-gray-300 rounded px-3 py-1 text-left text-sm" data-window-id="window7">Terminal</button>
+        <button class="bg-gray-200 hover:bg-gray-300 rounded px-3 py-1 text-left text-sm" data-window-id="wifi-app">Wi-Fi</button>
     </div>
 
     <div id="windowTemplate" class="window" style="display: none;">
@@ -986,6 +991,68 @@
             fetchDevices();
         };
 
+        // NEW: Wi-Fi App Logic
+        function scanWifiNetworks(){
+          if(!window.webOS){
+            // fallback: simulate
+            updateNetworks([{ssid:'HomeNet',security:true},{ssid:'Cafe',security:false}]);
+            return;
+          }
+          webOS.service.request("luna://com.webos.service.wifi/scan", {
+            method: "scan",
+            parameters: {},
+            onSuccess: res => { if(res && res.results) updateNetworks(res.results); else updateNetworks([]); },
+            onFailure: err => { console.error('scan failed',err); updateNetworks([]); }
+          });
+        }
+
+        function connectToWifi(ssid, password){
+          if(!window.webOS) { alert('Simulated connect to '+ssid); return; }
+          webOS.service.request("luna://com.webos.service.wifi/connect", {
+            parameters: { ssid: ssid, password: password },
+            onSuccess: r => alert('Connected: '+ssid),
+            onFailure: e => alert('Connect failed: '+(e.errorText||JSON.stringify(e)))
+          });
+        }
+
+        const initializeWifiApp = (windowElement) => {
+            const scanButton = windowElement.querySelector('#scanNetworksBtn');
+            const networksList = windowElement.querySelector('#wifiNetworksList');
+
+            scanButton.addEventListener('click', () => {
+                scanWifiNetworks();
+            });
+
+            window.updateNetworks = (networks) => {
+                networksList.innerHTML = '';
+                if (networks.length === 0) {
+                    networksList.innerHTML = '<p class="text-gray-500">No networks found.</p>';
+                    return;
+                }
+
+                networks.forEach(network => {
+                    const networkItem = document.createElement('div');
+                    networkItem.classList.add('flex', 'justify-between', 'items-center', 'p-2', 'border-b', 'border-gray-300', 'cursor-pointer', 'hover:bg-gray-200');
+                    networkItem.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10.293 2.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 10H6a1 1 0 110-2h6.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            <span>${network.ssid}</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-xs text-gray-500">
+                            ${network.security ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2h2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2h2zm8 0H7V7a3 3 0 116 0v2z" clip-rule="evenodd" /></svg> Secured' : 'Open'}
+                        </div>
+                    `;
+                    networkItem.addEventListener('click', () => {
+                        const password = network.security ? prompt('Enter password for ' + network.ssid) : null;
+                        connectToWifi(network.ssid, password);
+                    });
+                    networksList.appendChild(networkItem);
+                });
+            };
+        };
+
         // Function to create and open a new window
         const createWindow = (id, title, content) => {
             if (windows[id]) {
@@ -1151,6 +1218,8 @@
                 initializeTerminal(windowElement);
             } else if (id === 'files-app') {
                 initializeFilesApp(windowElement);
+            } else if (id === 'wifi-app') {
+                initializeWifiApp(windowElement);
             }
         };
 
@@ -1266,6 +1335,19 @@
                             </div>
                         </div>
                     `;
+                } else if (windowId === 'wifi-app') {
+                    title = 'Wi-Fi';
+                    content = `
+                        <div class="flex flex-col h-full p-4">
+                            <div class="flex justify-between items-center pb-4 border-b border-gray-300">
+                                <h3 class="text-lg font-semibold">Available Networks</h3>
+                                <button id="scanNetworksBtn" class="bg-blue-500 text-white text-xs px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Scan</button>
+                            </div>
+                            <div id="wifiNetworksList" class="flex flex-col flex-grow pt-4 overflow-y-auto">
+                                <p class="text-gray-500">Click 'Scan' to find networks.</p>
+                            </div>
+                        </div>
+                    `;
                 }
 
                 createWindow(windowId, title, content);
@@ -1276,7 +1358,7 @@
         // Event listeners for start menu buttons
         document.querySelectorAll('#startMenu button').forEach(button => {
             button.addEventListener('click', (e) => {
-                const windowId = e.currentTarget.dataset.windowId;
+                const windowId = e.currentTarget.dataset.window-id;
                 let title = e.currentTarget.textContent;
                 let content = '';
                 
@@ -1358,6 +1440,19 @@
                             <div class="terminal-input-container">
                                 <span id="terminalPrompt" class="text-green-500"></span>
                                 <input type="text" id="terminalInput" class="terminal-input" autofocus>
+                            </div>
+                        </div>
+                    `;
+                } else if (windowId === 'wifi-app') {
+                    title = 'Wi-Fi';
+                    content = `
+                        <div class="flex flex-col h-full p-4">
+                            <div class="flex justify-between items-center pb-4 border-b border-gray-300">
+                                <h3 class="text-lg font-semibold">Available Networks</h3>
+                                <button id="scanNetworksBtn" class="bg-blue-500 text-white text-xs px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Scan</button>
+                            </div>
+                            <div id="wifiNetworksList" class="flex flex-col flex-grow pt-4 overflow-y-auto">
+                                <p class="text-gray-500">Click 'Scan' to find networks.</p>
                             </div>
                         </div>
                     `;
