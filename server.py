@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 import os, shutil
+import platform
+import psutil
 
 app = Flask(__name__)
 
@@ -103,4 +105,50 @@ def new_file():
         return jsonify({"status": "created", "path": file_path})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)})
+
+@app.route("/hardware")
+def hardware_info():
+    # CPU
+    cpu_percent = psutil.cpu_percent(interval=0.5)
+    cpu_count = psutil.cpu_count()
+
+    # RAM
+    ram = psutil.virtual_memory()
+    ram_total = ram.total
+    ram_used = ram.used
+    ram_percent = ram.percent
+
+    # Disk
+    disk = psutil.disk_usage("/")
+    disk_total = disk.total
+    disk_used = disk.used
+    disk_percent = disk.percent
+
+    # Battery
+    battery = psutil.sensors_battery()
+    if battery:
+        battery_percent = battery.percent
+        charging = battery.power_plugged
+    else:
+        battery_percent = None
+        charging = None
+
+    # OS info
+    os_name = platform.system()
+    os_version = platform.version()
+
+    return jsonify({
+        "cpu_percent": cpu_percent,
+        "cpu_count": cpu_count,
+        "ram_total": ram_total,
+        "ram_used": ram_used,
+        "ram_percent": ram_percent,
+        "disk_total": disk_total,
+        "disk_used": disk_used,
+        "disk_percent": disk_percent,
+        "battery_percent": battery_percent,
+        "charging": charging,
+        "os_name": os_name,
+        "os_version": os_version
+    })
 
