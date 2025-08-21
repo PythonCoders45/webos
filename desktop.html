@@ -1279,13 +1279,10 @@
                 } else if (windowId === 'window4') {
                     title = 'Browser';
                     content = `
-                        <div class="flex flex-col h-full">
-                            <div class="flex items-center gap-2 p-2 bg-gray-200">
-                                <input type="text" id="urlInput" value="https://www.google.com" class="flex-grow p-1 rounded bg-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                <button id="goButton" class="bg-gray-400 text-xs px-2 py-1 rounded hover:bg-gray-500 transition-colors">Go</button>
-                            </div>
-                            <iframe id="browserIframe" src="https://www.google.com" class="flex-grow w-full border-0"></iframe>
-                        </div>
+                        <div id="browserIcon" class="desktop-icon" style="top:50px; left:50px; width:80px; text-align:center; cursor:pointer; user-select:none;">
+  🌐<div>Browser</div>
+</div>
+
                     `;
                 } else if (windowId === 'window5') {
                     title = 'Calculator';
@@ -1499,6 +1496,875 @@
         checkSetupStatus();
     });
 </script>
+<script>
+/* --- Virtual Desks --- */
+const NUM_DESKS = 10; // Number of virtual desks
+const desks = {};
+const windows = document.querySelectorAll('.window'); // existing windows
+
+// Initialize desks
+for (let i = 1; i <= NUM_DESKS; i++) {
+  desks[i] = [];
+}
+
+// Put all windows on Desk 1 initially
+windows.forEach(win => desks[1].push(win));
+
+// Show only Desk 1 windows initially
+Object.keys(desks).forEach(d => {
+  desks[d].forEach(w => w.style.display = d == 1 ? 'block' : 'none');
+});
+
+// Function to switch desk
+function switchDesk(deskNumber) {
+  Object.keys(desks).forEach(d => {
+    desks[d].forEach(w => w.style.display = 'none');
+  });
+  desks[deskNumber].forEach(w => w.style.display = 'block');
+}
+
+/* --- Sliders for Volume, Mic, Brightness --- */
+const taskbarTime = document.querySelector('#time'); // existing time element in your taskbar
+if(taskbarTime) {
+  const sliderPanel = document.createElement('div');
+  sliderPanel.id = 'slider-panel';
+  sliderPanel.style.position = 'absolute';
+  sliderPanel.style.bottom = '40px';
+  sliderPanel.style.right = '10px';
+  sliderPanel.style.background = '#222';
+  sliderPanel.style.padding = '10px';
+  sliderPanel.style.borderRadius = '5px';
+  sliderPanel.style.display = 'none';
+  sliderPanel.style.zIndex = '9999';
+  sliderPanel.style.color = '#fff';
+
+  sliderPanel.innerHTML = `
+    <label>Volume <input type="range" id="volume-slider" min="0" max="100" value="50"></label><br>
+    <label>Mic <input type="range" id="mic-slider" min="0" max="100" value="50"></label><br>
+    <label>Brightness <input type="range" id="brightness-slider" min="0" max="100" value="100"></label>
+  `;
+
+  document.body.appendChild(sliderPanel);
+
+  taskbarTime.addEventListener('click', () => {
+    sliderPanel.style.display = sliderPanel.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // Optional: link brightness slider to desktop background brightness
+  const desktop = document.getElementById('desktop');
+  const brightnessSlider = document.getElementById('brightness-slider');
+  brightnessSlider.addEventListener('input', () => {
+    if(desktop) desktop.style.filter = `brightness(${brightnessSlider.value}%)`;
+  });
+}
+</script>
+<script>
+/* --- Virtual Desks --- */
+const NUM_DESKS = 10; // number of virtual desktops
+const desks = {};
+const windows = document.querySelectorAll('.window'); // all existing windows
+
+// Initialize desks
+for (let i = 1; i <= NUM_DESKS; i++) {
+  desks[i] = [];
+}
+
+// Put all windows on Desk 1 initially
+windows.forEach(win => desks[1].push(win));
+
+// Show only Desk 1 windows initially
+Object.keys(desks).forEach(d => {
+  desks[d].forEach(w => w.style.display = d == 1 ? 'block' : 'none');
+});
+
+// Function to switch desk
+function switchDesk(deskNumber) {
+  Object.keys(desks).forEach(d => {
+    desks[d].forEach(w => w.style.display = 'none');
+  });
+  desks[deskNumber].forEach(w => w.style.display = 'block');
+}
+
+/* --- Taskbar Integration --- */
+const taskbar = document.querySelector('#taskbar'); // adjust to your taskbar ID
+const timeEl = document.querySelector('#time'); // existing time element
+
+if(taskbar){
+
+  // Create a container for desk buttons
+  const deskContainer = document.createElement('div');
+  deskContainer.style.display = 'flex';
+  deskContainer.style.alignItems = 'center';
+  deskContainer.style.marginRight = '10px';
+  taskbar.insertBefore(deskContainer, timeEl);
+
+  // Add desk buttons
+  for(let i=1; i<=NUM_DESKS; i++){
+    const btn = document.createElement('div');
+    btn.textContent = 'Desk ' + i;
+    btn.classList.add('desk-btn');
+    btn.style.cursor = 'pointer';
+    btn.style.margin = '0 3px';
+    btn.style.padding = '2px 5px';
+    btn.style.background = i===1 ? '#00aaff' : '#555';
+    btn.style.color = '#fff';
+    btn.style.borderRadius = '3px';
+    deskContainer.appendChild(btn);
+
+    btn.addEventListener('click', () => {
+      switchDesk(i);
+      // update active desk highlight
+      document.querySelectorAll('.desk-btn').forEach(b => b.style.background = '#555');
+      btn.style.background = '#00aaff';
+    });
+  }
+
+  // Add battery icon with percent
+  const batteryContainer = document.createElement('div');
+  batteryContainer.style.display = 'flex';
+  batteryContainer.style.alignItems = 'center';
+  batteryContainer.style.marginLeft = '10px';
+  taskbar.insertBefore(batteryContainer, timeEl);
+
+  const batteryIcon = document.createElement('span');
+  batteryIcon.innerHTML = '&#128267;'; // battery icon (Unicode)
+  batteryIcon.style.marginRight = '5px';
+  batteryIcon.style.color = '#fff';
+  batteryContainer.appendChild(batteryIcon);
+
+  const batteryPercent = document.createElement('span');
+  batteryPercent.textContent = '100%';
+  batteryPercent.style.color = '#fff';
+  batteryContainer.appendChild(batteryPercent);
+
+  // Update battery percent using Battery API
+  if(navigator.getBattery){
+    navigator.getBattery().then(battery => {
+      function updateBattery() {
+        const pct = Math.round(battery.level * 100);
+        batteryPercent.textContent = pct + '%';
+      }
+      updateBattery();
+      battery.addEventListener('levelchange', updateBattery);
+    });
+  }
+}
+</script>
+<script>
+// --- Virtual Desks ---
+const NUM_DESKS = 10;
+const desks = {};
+document.querySelectorAll('.window').forEach(win => desks[1] ? desks[1].push(win) : desks[1] = [win]);
+for(let i=2;i<=NUM_DESKS;i++) desks[i]=[];
+
+function switchDesk(n){
+  Object.values(desks).forEach(arr=>arr.forEach(w=>w.style.display='none'));
+  desks[n].forEach(w=>w.style.display='block');
+}
+
+// --- Taskbar Integration ---
+let taskbar = document.querySelector('#taskbar') || document.querySelector('body > div:last-child');
+if(!taskbar) console.warn('No taskbar found');
+else {
+  // Desk buttons container
+  const deskContainer = document.createElement('div');
+  deskContainer.style.display='flex';
+  deskContainer.style.alignItems='center';
+  deskContainer.style.marginRight='10px';
+  deskContainer.style.gap='2px';
+  taskbar.prepend(deskContainer);
+
+  for(let i=1;i<=NUM_DESKS;i++){
+    const btn = document.createElement('div');
+    btn.style.width='16px';
+    btn.style.height='16px';
+    btn.style.backgroundColor = i===1?'#00aaff':'#555';
+    btn.style.cursor='pointer';
+    btn.style.borderRadius='2px';
+    deskContainer.appendChild(btn);
+    btn.onclick = ()=>{
+      switchDesk(i);
+      deskContainer.querySelectorAll('div').forEach(b=>b.style.backgroundColor='#555');
+      btn.style.backgroundColor='#00aaff';
+    };
+  }
+
+  // Battery container
+  const batteryContainer = document.createElement('div');
+  batteryContainer.style.display='flex';
+  batteryContainer.style.alignItems='center';
+  batteryContainer.style.marginLeft='10px';
+  taskbar.appendChild(batteryContainer);
+
+  const batteryIcon = document.createElement('span');
+  batteryIcon.innerHTML='&#128267;';
+  batteryIcon.style.marginRight='5px';
+  batteryIcon.style.color='#fff';
+  batteryContainer.appendChild(batteryIcon);
+
+  const batteryPercent = document.createElement('span');
+  batteryPercent.textContent='100%';
+  batteryPercent.style.color='#fff';
+  batteryContainer.appendChild(batteryPercent);
+
+  if(navigator.getBattery){
+    navigator.getBattery().then(b=>{
+      function update(){ batteryPercent.textContent=Math.round(b.level*100)+'%'; }
+      update();
+      b.addEventListener('levelchange', update);
+    });
+  }
+}
+</script>
+<script src="https://js-dos.com/6.22.0/js-dos.js"></script>
+
+<script>
+// Check if doom.exe exists in Files app (assuming localStorage stores Base64)
+function doomExists() {
+  return localStorage.getItem('files/doom.exe') !== null;
+}
+
+// Only add icon if Doom is available
+if(doomExists()){
+  const desktop = document.getElementById('desktop') || document.body;
+
+  // Create Doom icon
+  const doomIcon = document.createElement('div');
+  doomIcon.className = 'icon';
+  doomIcon.style.position = 'absolute';
+  doomIcon.style.top = '50px';
+  doomIcon.style.left = '50px';
+  doomIcon.style.cursor = 'pointer';
+  doomIcon.innerHTML = '🕹️ Doom';
+  desktop.appendChild(doomIcon);
+
+  // Create Doom window
+  const doomWindow = document.createElement('div');
+  doomWindow.id = 'doomWindow';
+  doomWindow.style.display = 'none';
+  doomWindow.style.position = 'absolute';
+  doomWindow.style.top = '50px';
+  doomWindow.style.left = '50px';
+  doomWindow.style.width = '640px';
+  doomWindow.style.height = '480px';
+  doomWindow.style.background = '#000';
+  doomWindow.style.border = '2px solid #fff';
+  doomWindow.innerHTML = `<div style="text-align:right;"><button onclick="closeDoom()">X</button></div>
+                          <div id="dosContainer" style="width:100%;height:90%;"></div>`;
+  desktop.appendChild(doomWindow);
+
+  let emulator = null;
+
+  async function runDoom() {
+    const exe = localStorage.getItem('files/doom.exe');
+    const wad = localStorage.getItem('files/doom.wad');
+    if(!exe || !wad){ alert('Doom files missing'); return; }
+
+    const doomFiles = {
+      'DOOM.EXE': Uint8Array.from(atob(exe), c => c.charCodeAt(0)),
+      'DOOM.WAD': Uint8Array.from(atob(wad), c => c.charCodeAt(0))
+    };
+
+    doomWindow.style.display='block';
+
+    Dos(document.getElementById('dosContainer'), { wdosboxUrl: "https://js-dos.com/6.22.0/wdosbox.js" })
+      .ready.then(fs => {
+        emulator = fs;
+        Object.entries(doomFiles).forEach(([name, data]) => fs.createFile(name, data));
+        fs.run("DOOM.EXE");
+      });
+  }
+
+  function closeDoom(){
+    if(emulator) emulator.exit();
+    doomWindow.style.display='none';
+  }
+
+  doomIcon.addEventListener('click', runDoom);
+}
+</script>
+<script src="https://js-dos.com/6.22.0/js-dos.js"></script>
+
+<script>
+// --- Dynamic Apps Launcher ---
+// Assumes your Files app stores files in localStorage as Base64
+// Example: localStorage['files/doom.exe'] = <Base64 string>
+//          localStorage['files/doom.wad'] = <Base64 string if needed>
+
+const desktop = document.getElementById('desktop') || document.body;
+const files = Object.keys(localStorage)
+  .filter(k => k.startsWith('files/') && k.endsWith('.exe'));
+
+// Position icons automatically
+let iconTop = 50;
+let iconLeft = 50;
+const iconSpacingX = 100;
+const iconSpacingY = 100;
+const iconsPerRow = 5;
+
+// Create app icon + window for each exe
+files.forEach((file, index) => {
+  const appName = file.split('/').pop().replace('.exe','');
+
+  // Create desktop icon
+  const icon = document.createElement('div');
+  icon.className = 'icon';
+  icon.style.position = 'absolute';
+  icon.style.top = iconTop + 'px';
+  icon.style.left = iconLeft + 'px';
+  icon.style.cursor = 'pointer';
+  icon.style.textAlign = 'center';
+  icon.innerHTML = '🕹️<br>' + appName;
+  desktop.appendChild(icon);
+
+  // Update icon positions
+  iconLeft += iconSpacingX;
+  if((index+1) % iconsPerRow === 0){ iconLeft = 50; iconTop += iconSpacingY; }
+
+  // Create app window
+  const win = document.createElement('div');
+  win.id = appName + 'Window';
+  win.style.display = 'none';
+  win.style.position = 'absolute';
+  win.style.top = '50px';
+  win.style.left = '50px';
+  win.style.width = '640px';
+  win.style.height = '480px';
+  win.style.background = '#000';
+  win.style.border = '2px solid #fff';
+  win.innerHTML = `<div style="text-align:right;">
+                      <button onclick="closeApp('${appName}')">X</button>
+                    </div>
+                    <div id="container_${appName}" style="width:100%;height:90%;"></div>`;
+  desktop.appendChild(win);
+
+  let emulator = null;
+
+  // Function to run app
+  icon.addEventListener('click', async ()=>{
+    const exeBase64 = localStorage.getItem(file);
+    if(!exeBase64){ alert(appName+' file missing'); return; }
+
+    // Check for additional .wad or supporting files if needed
+    const extraFiles = {};
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith('files/') && k.endsWith('.wad')){
+        const keyName = k.split('/').pop().toUpperCase();
+        extraFiles[keyName] = Uint8Array.from(atob(localStorage.getItem(k)), c => c.charCodeAt(0));
+      }
+    });
+
+    const mainExe = Uint8Array.from(atob(exeBase64), c=>c.charCodeAt(0));
+
+    // Show window
+    win.style.display='block';
+
+    Dos(document.getElementById('container_'+appName), { wdosboxUrl: "https://js-dos.com/6.22.0/wdosbox.js" })
+      .ready.then(fs=>{
+        emulator = fs;
+        fs.createFile(file.split('/').pop().toUpperCase(), mainExe);
+        // Mount extra files (WADs etc.)
+        Object.entries(extraFiles).forEach(([name,data])=>fs.createFile(name,data));
+        fs.run(file.split('/').pop().toUpperCase());
+      });
+    
+    // Save emulator reference for closing
+    win.emulator = emulator;
+  });
+
+  // Close app function
+  window.closeApp = function(name){
+    const w = document.getElementById(name+'Window');
+    if(w && w.emulator) w.emulator.exit();
+    if(w) w.style.display='none';
+  };
+});
+</script>
+<script src="https://js-dos.com/6.22.0/js-dos.js"></script>
+
+<script>
+// --- Custom icons for known apps ---
+const filesIcons = {
+  'doom.exe': '🕹️',
+  'snake.exe': '🐍',
+  'tetris.exe': '🟦',
+  // Add more mappings as needed
+};
+
+// --- Dynamic Desktop Apps ---
+const desktop = document.getElementById('desktop') || document.body;
+const files = Object.keys(localStorage)
+  .filter(k => k.startsWith('files/') && k.endsWith('.exe'));
+
+// Automatic icon positioning
+let iconTop = 50;
+let iconLeft = 50;
+const iconSpacingX = 100;
+const iconSpacingY = 100;
+const iconsPerRow = 5;
+
+files.forEach((file,index) => {
+  const appName = file.split('/').pop().replace('.exe','');
+  const iconEmoji = filesIcons[file.split('/').pop().toLowerCase()] || '🖥️';
+
+  // --- Create Desktop Icon ---
+  const icon = document.createElement('div');
+  icon.className = 'desktop-icon';
+  icon.style.position = 'absolute';
+  icon.style.top = iconTop + 'px';
+  icon.style.left = iconLeft + 'px';
+  icon.style.cursor = 'grab';
+  icon.style.textAlign = 'center';
+  icon.style.width = '80px';
+  icon.style.userSelect = 'none';
+  icon.innerHTML = `<div style="font-size:32px;">${iconEmoji}</div><div>${appName}</div>`;
+  desktop.appendChild(icon);
+
+  // Update position for next icon
+  iconLeft += iconSpacingX;
+  if((index+1) % iconsPerRow === 0){ iconLeft = 50; iconTop += iconSpacingY; }
+
+  // --- Make icon draggable ---
+  icon.onmousedown = function(e){
+    let shiftX = e.clientX - icon.getBoundingClientRect().left;
+    let shiftY = e.clientY - icon.getBoundingClientRect().top;
+
+    function moveAt(pageX,pageY){
+      icon.style.left = pageX - shiftX + 'px';
+      icon.style.top = pageY - shiftY + 'px';
+    }
+
+    function onMouseMove(e){
+      moveAt(e.pageX, e.pageY);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    icon.onmouseup = function(){
+      document.removeEventListener('mousemove', onMouseMove);
+      icon.onmouseup = null;
+    };
+  };
+  icon.ondragstart = () => false;
+
+  // --- Create App Window ---
+  const win = document.createElement('div');
+  win.id = appName+'Window';
+  win.style.display = 'none';
+  win.style.position = 'absolute';
+  win.style.top = '50px';
+  win.style.left = '50px';
+  win.style.width = '640px';
+  win.style.height = '480px';
+  win.style.background = '#000';
+  win.style.border = '2px solid #fff';
+  win.style.resize = 'both';
+  win.style.overflow = 'hidden';
+  win.style.zIndex = 100;
+  win.innerHTML = `
+    <div style="text-align:right;background:#111;padding:2px;">
+      <button onclick="closeApp('${appName}')">X</button>
+    </div>
+    <div id="container_${appName}" style="width:100%;height:90%;"></div>
+  `;
+  desktop.appendChild(win);
+
+  let emulator = null;
+
+  // --- Run App ---
+  icon.addEventListener('click', async ()=>{
+    const exeBase64 = localStorage.getItem(file);
+    if(!exeBase64){ alert(appName+' file missing'); return; }
+
+    // Mount extra supporting files
+    const extraFiles = {};
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith('files/') && k.endsWith('.wad')){
+        const keyName = k.split('/').pop().toUpperCase();
+        extraFiles[keyName] = Uint8Array.from(atob(localStorage.getItem(k)), c=>c.charCodeAt(0));
+      }
+    });
+
+    const mainExe = Uint8Array.from(atob(exeBase64), c=>c.charCodeAt(0));
+    win.style.display='block';
+
+    Dos(document.getElementById('container_'+appName), { wdosboxUrl: "https://js-dos.com/6.22.0/wdosbox.js" })
+      .ready.then(fs=>{
+        emulator = fs;
+        fs.createFile(file.split('/').pop().toUpperCase(), mainExe);
+        Object.entries(extraFiles).forEach(([name,data])=>fs.createFile(name,data));
+        fs.run(file.split('/').pop().toUpperCase());
+      });
+
+    win.emulator = emulator;
+  });
+
+  // --- Close App Function ---
+  window.closeApp = function(name){
+    const w = document.getElementById(name+'Window');
+    if(w && w.emulator) w.emulator.exit();
+    if(w) w.style.display='none';
+  };
+});
+</script>
+<script src="https://js-dos.com/6.22.0/js-dos.js"></script>
+
+<script>
+// --- Desktop HTML file icons ---
+const desktop = document.getElementById('desktop') || document.body;
+
+// Map custom icons for known HTML files
+const htmlIcons = {
+  'index.html': '🏠',
+  'about.html': 'ℹ️',
+  'game.html': '🎮',
+  // Add more mappings
+};
+
+// --- Add icons dynamically ---
+Object.keys(localStorage)
+  .filter(k => k.startsWith('files/') && k.endsWith('.html'))
+  .forEach((fileKey, index)=>{
+    const fileName = fileKey.split('/').pop();
+    const iconEmoji = htmlIcons[fileName.toLowerCase()] || '📄';
+
+    const icon = document.createElement('div');
+    icon.className='desktop-icon';
+    icon.style.position='absolute';
+    icon.style.top = (50 + Math.floor(index/5)*100)+'px';
+    icon.style.left = (50 + (index%5)*100)+'px';
+    icon.style.textAlign='center';
+    icon.style.width='80px';
+    icon.style.cursor='grab';
+    icon.style.userSelect='none';
+    icon.innerHTML = `<div style="font-size:32px;">${iconEmoji}</div><div>${fileName}</div>`;
+    desktop.appendChild(icon);
+
+    // Drag & drop
+    icon.onmousedown = function(e){
+      let shiftX = e.clientX - icon.getBoundingClientRect().left;
+      let shiftY = e.clientY - icon.getBoundingClientRect().top;
+      function moveAt(pageX,pageY){
+        icon.style.left = pageX-shiftX+'px';
+        icon.style.top = pageY-shiftY+'px';
+      }
+      function onMouseMove(e){ moveAt(e.pageX,e.pageY); }
+      document.addEventListener('mousemove',onMouseMove);
+      icon.onmouseup = function(){ document.removeEventListener('mousemove',onMouseMove); icon.onmouseup=null; };
+    };
+    icon.ondragstart = ()=>false;
+
+    // Open in browser on double click
+    icon.ondblclick = ()=>{
+      openHTMLFromFiles(fileKey);
+    };
+});
+
+// --- Browser integration ---
+const browserIcon = document.createElement('div');
+browserIcon.className='desktop-icon';
+browserIcon.style.position='absolute';
+browserIcon.style.top='50px';
+browserIcon.style.left='300px';
+browserIcon.style.textAlign='center';
+browserIcon.style.width='80px';
+browserIcon.style.cursor='pointer';
+browserIcon.style.userSelect='none';
+browserIcon.innerHTML=`<div style="font-size:32px;">🌐</div><div>Browser</div>`;
+desktop.appendChild(browserIcon);
+
+// Browser Window
+const browserWindow = document.createElement('div');
+browserWindow.id='browserWindow';
+browserWindow.style.display='none';
+browserWindow.style.position='absolute';
+browserWindow.style.top='50px';
+browserWindow.style.left='50px';
+browserWindow.style.width='900px';
+browserWindow.style.height='600px';
+browserWindow.style.background='#fff';
+browserWindow.style.border='2px solid #000';
+browserWindow.style.resize='both';
+browserWindow.style.overflow='hidden';
+browserWindow.style.zIndex=100;
+browserWindow.innerHTML=`
+  <div id="browserToolbar" style="display:flex;align-items:center;background:#111;color:white;padding:2px;">
+    <button id="backBtn">◀</button>
+    <button id="forwardBtn">▶</button>
+    <button id="reloadBtn">⟳</button>
+    <input id="browserAddress" type="text" style="flex:1;margin:0 5px;" placeholder="https://example.com">
+    <button id="bookmarkBtn">★</button>
+    <button id="newTabBtn">+</button>
+    <button id="closeBrowser" style="background:#f00;color:#fff;">X</button>
+  </div>
+  <div id="bookmarksContainer" style="background:#222;color:white;padding:2px;overflow-x:auto;white-space:nowrap;"></div>
+  <div id="tabsContainer" style="display:flex;background:#333;color:#fff;overflow-x:auto;"></div>
+  <div id="iframeContainer" style="width:100%;height:calc(100% - 90px);border:none;"></div>
+`;
+desktop.appendChild(browserWindow);
+browserIcon.addEventListener('click',()=>{ browserWindow.style.display='block'; });
+document.getElementById('closeBrowser').addEventListener('click',()=>{ browserWindow.style.display='none'; });
+
+// --- Tabs/Bookmarks logic ---
+let tabs=[], currentTab=-1;
+
+// Load saved tabs
+const savedTabs = JSON.parse(localStorage.getItem('browserTabs')||'[]');
+savedTabs.forEach(url=>createTab(url));
+
+// Functions from previous implementation...
+// createTab(url), switchTab(id), saveTabs(), saveBookmark(url), renderBookmarks(), openHTMLFromFiles(fileKey)
+// (You can reuse all code from the persistent browser snippet above)
+
+// --- Drag & Drop support for opening HTML ---
+browserWindow.addEventListener('dragover', e=>e.preventDefault());
+browserWindow.addEventListener('drop', e=>{
+  e.preventDefault();
+  for(const f of e.dataTransfer.files){
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const base64 = btoa(ev.target.result);
+      const key = 'files/'+f.name;
+      localStorage.setItem(key, base64);
+      openHTMLFromFiles(key);
+    };
+    reader.readAsBinaryString(f);
+  }
+});
+</script>
+<script>
+// --- Taskbar ---
+const taskbar = document.createElement('div');
+taskbar.id='taskbar';
+taskbar.style.position='absolute';
+taskbar.style.bottom='0';
+taskbar.style.left='0';
+taskbar.style.width='100%';
+taskbar.style.height='40px';
+taskbar.style.background='#222';
+taskbar.style.display='flex';
+taskbar.style.alignItems='center';
+taskbar.style.padding='0 5px';
+taskbar.style.zIndex=9999;
+desktop.appendChild(taskbar);
+
+// --- Manage Windows ---
+let windows = [];
+let zIndexCounter = 100;
+
+function createWindow(title, contentElement){
+  const win = document.createElement('div');
+  win.className='osWindow';
+  win.style.position='absolute';
+  win.style.top='50px';
+  win.style.left='50px';
+  win.style.width='640px';
+  win.style.height='480px';
+  win.style.border='2px solid #fff';
+  win.style.background='#000';
+  win.style.resize='both';
+  win.style.overflow='hidden';
+  win.style.zIndex = ++zIndexCounter;
+
+  // Window header with controls
+  const header = document.createElement('div');
+  header.style.height='30px';
+  header.style.background='#111';
+  header.style.display='flex';
+  header.style.alignItems='center';
+  header.style.justifyContent='space-between';
+  header.style.cursor='move';
+  header.style.color='#fff';
+  header.innerHTML=`<span>${title}</span>
+    <div>
+      <button class="minBtn">—</button>
+      <button class="maxBtn">☐</button>
+      <button class="closeBtn">✕</button>
+    </div>`;
+  win.appendChild(header);
+
+  // Window content
+  const content = document.createElement('div');
+  content.style.width='100%';
+  content.style.height='calc(100% - 30px)';
+  content.appendChild(contentElement);
+  win.appendChild(content);
+
+  desktop.appendChild(win);
+
+  // Draggable header
+  header.onmousedown = function(e){
+    let shiftX = e.clientX - win.getBoundingClientRect().left;
+    let shiftY = e.clientY - win.getBoundingClientRect().top;
+    function moveAt(pageX,pageY){
+      win.style.left = pageX-shiftX+'px';
+      win.style.top = pageY-shiftY+'px';
+    }
+    function onMouseMove(e){ moveAt(e.pageX,e.pageY); }
+    document.addEventListener('mousemove', onMouseMove);
+    document.onmouseup = function(){ document.removeEventListener('mousemove', onMouseMove); document.onmouseup=null; };
+    win.style.zIndex = ++zIndexCounter;
+  };
+  header.ondragstart = ()=>false;
+
+  // Taskbar button
+  const taskBtn = document.createElement('button');
+  taskBtn.innerText = title;
+  taskBtn.style.marginRight='2px';
+  taskbar.appendChild(taskBtn);
+
+  taskBtn.onclick = ()=>{
+    if(win.style.display==='none') win.style.display='block';
+    win.style.zIndex = ++zIndexCounter;
+  };
+
+  // Minimize
+  header.querySelector('.minBtn').onclick = ()=>{ win.style.display='none'; };
+
+  // Maximize
+  let maximized=false;
+  header.querySelector('.maxBtn').onclick = ()=>{
+    if(!maximized){
+      win.dataset.prevWidth = win.style.width;
+      win.dataset.prevHeight = win.style.height;
+      win.dataset.prevTop = win.style.top;
+      win.dataset.prevLeft = win.style.left;
+      win.style.top='0';
+      win.style.left='0';
+      win.style.width='100%';
+      win.style.height='calc(100% - 40px)';
+      maximized=true;
+    } else {
+      win.style.top = win.dataset.prevTop;
+      win.style.left = win.dataset.prevLeft;
+      win.style.width = win.dataset.prevWidth;
+      win.style.height = win.dataset.prevHeight;
+      maximized=false;
+    }
+  };
+
+  // Close
+  header.querySelector('.closeBtn').onclick = ()=>{
+    win.remove();
+    taskBtn.remove();
+  };
+
+  windows.push(win);
+  return win;
+}
+
+// --- Example: Integrate Browser and Doom ---
+browserIcon.addEventListener('click', ()=>{
+  const iframe = document.createElement('iframe');
+  iframe.style.width='100%';
+  iframe.style.height='100%';
+  iframe.style.border='none';
+  iframe.src = 'about:blank';
+  createWindow('Browser', iframe).style.display='block';
+});
+
+// Example for Doom
+const doomIcon = document.createElement('div');
+doomIcon.className='desktop-icon';
+doomIcon.style.position='absolute';
+doomIcon.style.top='50px';
+doomIcon.style.left='400px';
+doomIcon.style.textAlign='center';
+doomIcon.style.width='80px';
+doomIcon.style.cursor='pointer';
+doomIcon.style.userSelect='none';
+doomIcon.innerHTML=`<div style="font-size:32px;">🕹️</div><div>Doom</div>`;
+desktop.appendChild(doomIcon);
+
+doomIcon.onclick = async ()=>{
+  const container = document.createElement('div');
+  await Dos(container, {wdosboxUrl:"https://js-dos.com/6.22.0/wdosbox.js"}).ready;
+  createWindow('Doom', container).style.display='block';
+};
+</script>
+<script>
+// Reference existing browser window
+const browserIcon = document.getElementById('browserIcon');
+const browserWindow = document.getElementById('browserWindow');
+const addressInput = document.getElementById('browserAddress');
+const browserFrame = document.getElementById('browserFrame'); // this can be a <webview> or <object> if you want
+
+browserIcon.onclick = ()=>{
+    browserWindow.style.display='block';
+};
+
+// When user enters URL or double-clicks a file
+function openBrowser(url){
+    // Navigate to Python-served content
+    window.location.href = url; // replaces iframe; loads real file served by Python
+}
+
+// Load Files app dynamically
+fetch("/api/list_files")
+    .then(res=>res.json())
+    .then(files=>{
+        files.forEach(file=>{
+            const icon = document.createElement('div');
+            icon.className='desktop-icon';
+            icon.innerText=file;
+            icon.ondblclick = ()=>{
+                openBrowser(`/files/${file}`);
+            };
+            document.body.appendChild(icon);
+        });
+    });
+
+// Handle address bar
+document.getElementById('goBtn').onclick = ()=>{
+    let url = addressInput.value;
+    if(!url.startsWith('http')) url='/files/'+url; // optionally resolve local files
+    openBrowser(url);
+};
+</script>
+
+<script>
+// Reference desktop container
+const desktop = document.getElementById('desktop');
+
+// Open Python-powered URLs
+const browserIconEl = document.getElementById('browserIcon');
+browserIconEl.onclick = () => {
+    let url = prompt("Enter URL or file name from Files app:");
+    if(!url) return;
+
+    // If it doesn’t start with http, assume local file
+    if(!url.startsWith("http")) url = `/files/${url}`;
+
+    // Open file in the current window
+    window.location.href = url;
+};
+
+// Dynamically load Files app icons
+fetch("/api/list_files")
+  .then(res => res.json())
+  .then(files => {
+    files.forEach((file,i)=>{
+      const icon = document.createElement('div');
+      icon.className='desktop-icon';
+      icon.style.top = (50 + Math.floor(i/5)*100)+'px';
+      icon.style.left = (50 + (i%5)*100)+'px';
+      icon.innerHTML = '📄<div>'+file+'</div>';
+      icon.ondblclick = ()=>{
+        // Open file via Python backend
+        window.location.href = `/files/${file}`;
+      };
+      desktop.appendChild(icon);
+    });
+  });
+
+// Optional: drag & drop for icons (basic)
+let dragged;
+desktop.addEventListener("dragstart", e => dragged = e.target);
+desktop.addEventListener("dragend", e => {
+  dragged.style.top = e.pageY - 40 + "px";
+  dragged.style.left = e.pageX - 40 + "px";
+});
+</script>
+
 
 </body>
 </html>
