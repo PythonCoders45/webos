@@ -33,5 +33,19 @@ def upload_file():
     f.save(os.path.join(FILES_DIR, f.filename))
     return "File uploaded", 200
 
+@app.route('/game/<service>/<game_id>')
+def game(service, game_id):
+    # Construct streaming URL for supported service
+    if service == 'geforcenow':
+        # Example: embed GeForce NOW game URL (requires user login)
+        url = f"https://play.geforcenow.com/game/{game_id}"
+    elif service == 'parsec':
+        url = f"https://parsec.app/game/{game_id}"
+    else:
+        url = "/"
+    return f"""
+        <iframe src="{url}" style="width:100vw;height:100vh;border:none;"></iframe>
+    """
+
 if __name__ == "__main__":
     app.run(debug=True)
