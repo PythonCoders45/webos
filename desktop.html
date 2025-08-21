@@ -2501,6 +2501,71 @@ async function renameItem() {
     }
 }
 </script>
+<script>
+// --- DELETE ---
+async function deleteItem() {
+    if (!selectedFile) return alert("No file selected");
+
+    if (!confirm("Delete " + selectedFile + "?")) return;
+
+    let res = await fetch("/files/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: selectedFile })
+    });
+
+    let data = await res.json();
+
+    if (data.status === "deleted") {
+        alert("Deleted: " + selectedFile);
+        refreshDesktop();
+    } else {
+        alert("Error: " + data.error);
+    }
+}
+
+// --- NEW FOLDER ---
+async function newFolder() {
+    let name = prompt("Enter new folder name:", "New Folder");
+    if (!name) return;
+
+    let res = await fetch("/files/new_folder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: "/home/webos/Desktop", name: name })
+    });
+
+    let data = await res.json();
+
+    if (data.status === "created") {
+        alert("Folder created: " + name);
+        refreshDesktop();
+    } else {
+        alert("Error: " + data.error);
+    }
+}
+
+// --- NEW FILE ---
+async function newFile() {
+    let name = prompt("Enter new file name:", "New File.txt");
+    if (!name) return;
+
+    let res = await fetch("/files/new_file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: "/home/webos/Desktop", name: name })
+    });
+
+    let data = await res.json();
+
+    if (data.status === "created") {
+        alert("File created: " + name);
+        refreshDesktop();
+    } else {
+        alert("Error: " + data.error);
+    }
+}
+</script>
 
 
 </body>
