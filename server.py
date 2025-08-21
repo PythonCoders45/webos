@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import os, shutil
 import platform
 import psutil
+import subprocess
 
 app = Flask(__name__)
 
@@ -151,4 +152,30 @@ def hardware_info():
         "os_name": os_name,
         "os_version": os_version
     })
+
+@app.route("/wifi/scan", methods=["GET"])
+def wifi_scan():
+    networks = []
+    try:
+        # Use nmcli to list Wi-Fi networks (Linux)
+        result = subprocess.check_output(["nmcli", "-t", "-f", "SSID", "dev", "wifi"], universal_newlines=True)
+        networks = [line.strip() for line in result.split("\n") if line.strip()]
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)})
+
+    return jsonify({"status": "ok", "networks": networks})
+
+@app.route("/wifi/connect", methods=["POST"])
+def wifi_connect():
+    data = request.json
+    ssid = data["ssid"]
+    password = data["password"]
+
+    try:
+        # Connect to Wi-Fi using nmcli
+        subprocess.check_output(["nmcli", "dev", "wifi", "connect", ssid, "password", password])
+        return jsonify({"status": "connected"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"status": "failed", "error": e.output.decode()})
+
 
