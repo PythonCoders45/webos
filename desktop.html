@@ -2403,7 +2403,7 @@ gameApp.onclick = () => {
     <div id="openMediaVideo" class="menu-item" style="display:none;" onclick="openMedia('video')">🎬 Open video in new tab</div>
     <div id="openMediaAudio" class="menu-item" style="display:none;" onclick="openMedia('audio')">🎵 Open audio in new tab</div>
     <div class="menu-item" onclick="savePage()">💾 Save page as HTML</div>
-
+    
     <div onclick="copyItem()">Copy</div>
     <div onclick="cutItem()">Cut</div>
     <div onclick="pasteItem()">Paste</div>
@@ -2576,6 +2576,173 @@ async function newFile() {
     }
 }
 </script>
+
+<script>
+  // Call this after your Files app finishes rendering
+function addHardwarePanel() {
+    const filesContainer = document.getElementById("filesApp"); // Files app container
+    if (!filesContainer) return;
+
+    // Check if already added
+    if (document.getElementById("hardwarePanel")) return;
+
+    const panel = document.createElement("div");
+    panel.id = "hardwarePanel";
+    panel.style = `
+        margin-top: 10px;
+        padding: 10px;
+        background:#1e1e1e;
+        color:#fff;
+        border-radius:8px;
+        font-family:sans-serif;
+    `;
+    panel.innerHTML = `
+        <h3 style="margin:0 0 10px 0; font-size:16px;">Hardware Info</h3>
+        <div>CPU: <span id="cpu"></span>%</div>
+        <div>RAM: <span id="ram"></span>%</div>
+        <div>Disk: <span id="disk"></span>%</div>
+        <div>Battery: <span id="battery"></span>%</div>
+    `;
+    filesContainer.appendChild(panel);
+
+    // Start live update
+    setInterval(updateHardware, 1000);
+    updateHardware();
+}
+
+// Hardware update function
+async function updateHardware() {
+    try {
+        let res = await fetch("/hardware");
+        let data = await res.json();
+
+        document.getElementById("cpu").innerText = data.cpu_percent;
+        document.getElementById("ram").innerText = data.ram_percent;
+        document.getElementById("disk").innerText = data.disk_percent;
+        document.getElementById("battery").innerText = data.battery_percent !== null ? data.battery_percent : "N/A";
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// Call this function after the Files app loads its content
+addHardwarePanel();
+
+
+function openHardwarePanel() {
+    // If panel already exists, do nothing
+    if (document.getElementById("hardwarePanel")) return;
+
+    const panel = document.createElement("div");
+    panel.id = "hardwarePanel";
+    panel.style = `
+        position:absolute;
+        top:50px; left:50px;
+        width:300px; background:#1e1e1e;
+        color:#fff; padding:15px;
+        border-radius:10px; font-family:sans-serif;
+        z-index:9999;
+    `;
+    panel.innerHTML = `
+        <h3 style="margin:0 0 10px 0;">Hardware Info</h3>
+        <div>CPU: <span id="cpu"></span>%</div>
+        <div>RAM: <span id="ram"></span>%</div>
+        <div>Disk: <span id="disk"></span>%</div>
+        <div>Battery: <span id="battery"></span>%</div>
+        <button onclick="document.getElementById('hardwarePanel').remove()">Close</button>
+    `;
+    document.body.appendChild(panel);
+
+    setInterval(updateHardware, 1000);
+    updateHardware();
+}
+
+
+async function updateHardware() {
+    try {
+        let res = await fetch("/hardware");
+        let data = await res.json();
+
+        if (!document.getElementById("cpu")) return;
+
+        document.getElementById("cpu").innerText = data.cpu_percent;
+        document.getElementById("ram").innerText = data.ram_percent;
+        document.getElementById("disk").innerText = data.disk_percent;
+        document.getElementById("battery").innerText = data.battery_percent !== null ? data.battery_percent : "N/A";
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+
+</script>
+<script>
+function showNotification(title, message, duration = 5000) {
+    const container = document.getElementById("notificationsContainer");
+
+    const notif = document.createElement("div");
+    notif.style = `
+        background: rgba(40, 40, 40, 0.95);
+        color: #fff;
+        padding: 10px 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.5s ease;
+    `;
+    notif.innerHTML = `<strong>${title}</strong><br>${message}`;
+    container.appendChild(notif);
+
+    // animate in
+    requestAnimationFrame(() => {
+        notif.style.opacity = 1;
+        notif.style.transform = "translateX(0)";
+    });
+
+    // remove after duration
+    setTimeout(() => {
+        notif.style.opacity = 0;
+        notif.style.transform = "translateX(100%)";
+        setTimeout(() => notif.remove(), 500);
+    }, duration);
+}
+</script>
+
+<script>
+if ("getBattery" in navigator) {
+    navigator.getBattery().then(function(battery) {
+
+        function checkBattery() {
+            if (battery.level <= 0.2 && !batteryAlertShown) {
+                showNotification("Battery Low", "Battery is below 20%!", 7000);
+                batteryAlertShown = true;
+            } else if (battery.level > 0.2) {
+                batteryAlertShown = false; // reset alert when charging above 20%
+            }
+        }
+
+        let batteryAlertShown = false;
+
+        // Initial check
+        checkBattery();
+
+        // Listen for battery level changes
+        battery.addEventListener('levelchange', checkBattery);
+        battery.addEventListener('chargingchange', checkBattery);
+    });
+}
+</script>
+
+<div id="notificationsContainer" style="
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 300px;
+    z-index: 9999;
+    font-family: sans-serif;
+"></div>
 
 
 </body>
