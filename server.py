@@ -60,3 +60,47 @@ def rename_file():
         return jsonify({"status": "renamed", "new_path": new_path})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)})
+
+@app.route("/files/delete", methods=["POST"])
+def delete_file():
+    data = request.json
+    path = data["path"]
+
+    try:
+        if os.path.isfile(path):
+            os.remove(path)
+        else:
+            shutil.rmtree(path)
+        return jsonify({"status": "deleted"})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)})
+
+@app.route("/files/new_folder", methods=["POST"])
+def new_folder():
+    data = request.json
+    path = data["path"]
+    name = data["name"]
+
+    folder_path = os.path.join(path, name)
+
+    try:
+        os.makedirs(folder_path, exist_ok=True)
+        return jsonify({"status": "created", "path": folder_path})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)})
+
+@app.route("/files/new_file", methods=["POST"])
+def new_file():
+    data = request.json
+    path = data["path"]
+    name = data["name"]
+
+    file_path = os.path.join(path, name)
+
+    try:
+        with open(file_path, "w") as f:
+            f.write("")  # create empty file
+        return jsonify({"status": "created", "path": file_path})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)})
+
